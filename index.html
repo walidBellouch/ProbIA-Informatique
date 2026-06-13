@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProbIA v2 — Évaluateur Curriculaire IA</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #0f1b35;
+  --navy2: #1a2d52;
+  --blue: #2563eb;
+  --blue-light: #3b82f6;
+  --gold: #f59e0b;
+  --gold-light: #fbbf24;
+  --cream: #fafaf7;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --success: #059669;
+  --warning: #d97706;
+  --error: #dc2626;
+  --card-bg: #ffffff;
+  --radius: 16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;overflow-x:hidden}
+ 
+/* ═══════════════════════════════════════
+   AUTH OVERLAY
+═══════════════════════════════════════ */
+#authOverlay {
+  position:fixed;inset:0;z-index:9999;
+  background:var(--navy);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:1.5rem;
+  transition:opacity 0.4s ease;
+}
+#authOverlay.hiding{opacity:0;pointer-events:none}
+ 
+.auth-bg {
+  position:absolute;inset:0;overflow:hidden;pointer-events:none;
+}
+.auth-bg::before{content:'';position:absolute;top:-120px;right:-120px;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,0.18),transparent 65%)}
+.auth-bg::after{content:'';position:absolute;bottom:-80px;left:-80px;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,0.12),transparent 65%)}
+ 
+.auth-card {
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:24px;
+  padding:2.5rem 2rem;
+  width:100%;max-width:420px;
+  backdrop-filter:blur(12px);
+  position:relative;z-index:1;
+  box-shadow:0 24px 64px rgba(0,0,0,0.4);
+}
+ 
+.auth-logo {
+  text-align:center;margin-bottom:2rem;
+}
+.auth-logo-mark {
+  width:60px;height:60px;
+  background:linear-gradient(135deg,var(--blue),var(--gold));
+  border-radius:16px;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:1.8rem;margin-bottom:1rem;
+  box-shadow:0 8px 24px rgba(37,99,235,0.35);
+}
+.auth-logo-title {
+  font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;color:white;letter-spacing:-0.5px;
+}
+.auth-logo-title span{color:var(--gold)}
+.auth-logo-sub {
+  font-size:0.75rem;color:rgba(255,255,255,0.45);letter-spacing:2px;text-transform:uppercase;margin-top:4px;
+}
+ 
+.auth-tabs {
+  display:flex;gap:0.4rem;margin-bottom:1.75rem;
+  background:rgba(255,255,255,0.05);border-radius:10px;padding:0.3rem;
+}
+.auth-tab {
+  flex:1;padding:0.6rem 1rem;border:none;background:transparent;
+  border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;
+  color:rgba(255,255,255,0.5);cursor:pointer;transition:all 0.22s;
+}
+.auth-tab.active {
+  background:var(--blue);color:white;
+  box-shadow:0 2px 8px rgba(37,99,235,0.4);
+}
+ 
+.auth-form-group{margin-bottom:1.1rem}
+.auth-label{display:block;font-size:0.8rem;font-weight:500;color:rgba(255,255,255,0.65);margin-bottom:0.45rem;letter-spacing:0.3px}
+.auth-input {
+  width:100%;padding:0.85rem 1rem 0.85rem 2.75rem;
+  background:rgba(255,255,255,0.07);
+  border:1.5px solid rgba(255,255,255,0.1);
+  border-radius:10px;
+  color:white;font-family:'DM Sans',sans-serif;font-size:0.9rem;
+  transition:border-color 0.2s,box-shadow 0.2s;
+  position:relative;
+}
+.auth-input::placeholder{color:rgba(255,255,255,0.3)}
+.auth-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.2)}
+.auth-input.error{border-color:#f87171;box-shadow:0 0 0 3px rgba(248,113,113,0.15)}
+ 
+.input-wrap{position:relative}
+.input-icon{position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);font-size:1rem;opacity:0.5;pointer-events:none}
+.input-toggle{position:absolute;right:0.85rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.45);font-size:0.9rem;padding:0;transition:color 0.2s}
+.input-toggle:hover{color:rgba(255,255,255,0.8)}
+ 
+.auth-btn {
+  width:100%;padding:0.95rem;margin-top:0.5rem;
+  background:linear-gradient(135deg,var(--blue),#1d4ed8);
+  color:white;border:none;border-radius:10px;
+  font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;
+  cursor:pointer;transition:all 0.25s;letter-spacing:0.3px;
+  box-shadow:0 4px 16px rgba(37,99,235,0.35);
+}
+.auth-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,99,235,0.45)}
+.auth-btn:active{transform:translateY(0)}
+.auth-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+ 
+.auth-alert{
+  padding:0.7rem 0.9rem;border-radius:8px;font-size:0.82rem;
+  display:flex;align-items:flex-start;gap:0.5rem;margin-top:0.75rem;
+}
+.auth-alert.error{background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#fca5a5}
+.auth-alert.success{background:rgba(5,150,105,0.15);border:1px solid rgba(5,150,105,0.3);color:#6ee7b7}
+.auth-alert.warn{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fcd34d}
+ 
+.auth-divider{height:1px;background:rgba(255,255,255,0.08);margin:1.25rem 0;position:relative}
+.auth-divider::after{content:'ou';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(15,27,53,0.9);padding:0 0.75rem;color:rgba(255,255,255,0.3);font-size:0.75rem}
+ 
+.strength-bar{height:3px;background:rgba(255,255,255,0.08);border-radius:4px;margin-top:0.4rem;overflow:hidden}
+.strength-fill{height:100%;border-radius:4px;transition:width 0.3s,background 0.3s}
+.strength-label{font-size:0.72rem;margin-top:0.3rem;transition:color 0.3s}
+ 
+.auth-footer{text-align:center;margin-top:1.25rem;font-size:0.78rem;color:rgba(255,255,255,0.35)}
+ 
+/* ═══════════════════════════════════════
+   USER BAR (logged-in)
+═══════════════════════════════════════ */
+.user-bar {
+  background:rgba(255,255,255,0.08);
+  border-bottom:1px solid rgba(255,255,255,0.08);
+  padding:0.55rem 1.5rem;
+  display:flex;align-items:center;justify-content:flex-end;gap:0.75rem;
+  position:relative;z-index:10;
+}
+.user-bar-info{display:flex;align-items:center;gap:0.6rem}
+.user-avatar{
+  width:32px;height:32px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--gold));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:700;color:white;
+  flex-shrink:0;
+}
+.user-name{font-size:0.85rem;font-weight:500;color:rgba(255,255,255,0.85)}
+.user-role{font-size:0.7rem;color:rgba(255,255,255,0.4)}
+.btn-logout{
+  padding:0.4rem 0.9rem;border-radius:7px;border:1px solid rgba(255,255,255,0.15);
+  background:transparent;color:rgba(255,255,255,0.6);font-family:'DM Sans',sans-serif;
+  font-size:0.78rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;
+}
+.btn-logout:hover{background:rgba(220,38,38,0.2);border-color:rgba(220,38,38,0.4);color:#fca5a5}
+ 
+/* ═══════════════════════════════════════
+   HERO HEADER
+═══════════════════════════════════════ */
+.hero{background:var(--navy);padding:2.5rem 2rem 3rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(37,99,235,0.25),transparent 70%)}
+.hero::after{content:'';position:absolute;bottom:-40px;left:30px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,0.15),transparent 70%)}
+.hero-inner{max-width:900px;margin:0 auto;position:relative;z-index:1}
+.logo-row{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.logo-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--blue),var(--gold));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}
+.logo-text{font-family:'Syne',sans-serif;font-size:2.2rem;font-weight:800;color:white;letter-spacing:-0.5px}
+.logo-sub{font-size:0.8rem;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.hero-desc{color:rgba(255,255,255,0.75);font-size:0.95rem;margin-bottom:1.5rem;max-width:500px;line-height:1.7}
+.badge-row{display:flex;flex-wrap:wrap;gap:0.5rem}
+.badge{display:inline-flex;align-items:center;gap:0.4rem;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);padding:0.35rem 0.85rem;border-radius:30px;font-size:0.75rem;font-weight:500}
+.badge.gold{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:var(--gold-light)}
+ 
+/* ═══════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════ */
+.app{max-width:900px;margin:0 auto;padding:2rem}
+ 
+/* MODE SWITCHER */
+.mode-switcher{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:0.4rem;display:flex;gap:0.4rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.mode-btn{flex:1;padding:0.75rem 1rem;border:none;background:transparent;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:0.5rem}
+.mode-btn.active{background:var(--navy);color:white;box-shadow:0 2px 8px rgba(15,27,53,0.25)}
+.mode-btn:hover:not(.active){background:#f1f5f9;color:var(--text)}
+ 
+/* CARD */
+.card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;margin-bottom:1.25rem;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.card-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);margin-bottom:1.25rem;display:flex;align-items:center;gap:0.5rem}
+ 
+/* FORM */
+.form-group{margin-bottom:1.25rem}
+.form-label{display:block;font-size:0.85rem;font-weight:500;color:var(--text);margin-bottom:0.5rem}
+.required{color:var(--error)}
+textarea,select,input[type=text]{width:100%;padding:0.85rem 1rem;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.9rem;color:var(--text);background:var(--cream);transition:border-color 0.2s,box-shadow 0.2s;resize:vertical}
+textarea:focus,select:focus,input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:2.5rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}
+ 
+/* HINT BOX */
+.hint{background:#eff6ff;border-left:3px solid var(--blue);border-radius:8px;padding:0.75rem 1rem;font-size:0.82rem;color:#1e40af;margin-top:0.75rem;line-height:1.6}
+.hint.gold{background:#fffbeb;border-color:var(--gold);color:#92400e}
+ 
+/* ANALYZE BTN */
+.btn-analyze{width:100%;padding:1rem 2rem;background:linear-gradient(135deg,var(--navy),var(--navy2));color:white;border:none;border-radius:12px;font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;cursor:pointer;transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:0.6rem;letter-spacing:0.3px}
+.btn-analyze:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 24px rgba(15,27,53,0.3)}
+.btn-analyze:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.btn-analyze .sparkle{font-size:1.2rem}
+ 
+/* LOADING */
+.loading{text-align:center;padding:2.5rem;background:#f8fafc;border-radius:12px;margin-top:1rem}
+.loading-ring{width:48px;height:48px;margin:0 auto 1rem;border:3px solid var(--border);border-top:3px solid var(--blue);border-radius:50%;animation:spin 0.9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{color:var(--muted);font-size:0.9rem}
+.loading-steps{display:flex;flex-direction:column;gap:0.4rem;margin-top:1rem;text-align:left;max-width:320px;margin-left:auto;margin-right:auto}
+.step{font-size:0.8rem;color:var(--muted);display:flex;align-items:center;gap:0.5rem;opacity:0;animation:fadeStep 0.5s ease forwards}
+.step.active{color:var(--blue);font-weight:500}
+.step.done{color:var(--success)}
+@keyframes fadeStep{to{opacity:1}}
+ 
+/* SCORE CARD */
+.score-hero{border-radius:var(--radius);padding:2rem;color:white;text-align:center;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.score-hero::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,0.03) 0px,rgba(255,255,255,0.03) 1px,transparent 1px,transparent 12px)}
+.score-num{font-family:'Syne',sans-serif;font-size:4rem;font-weight:800;line-height:1}
+.score-denom{font-size:1.8rem;opacity:0.6}
+.score-label{font-size:1rem;opacity:0.85;margin:0.5rem 0}
+.score-badge{display:inline-block;background:rgba(255,255,255,0.2);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,0.25);padding:0.4rem 1.2rem;border-radius:30px;font-size:1.1rem;font-weight:600;margin-top:0.5rem}
+ 
+/* CRITERE ITEMS */
+.critere-item{border:1px solid var(--border);border-radius:12px;padding:1.25rem;margin-bottom:0.75rem;transition:box-shadow 0.2s}
+.critere-item:hover{box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+.critere-header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:0.5rem}
+.critere-name{font-family:'Syne',sans-serif;font-size:0.9rem;font-weight:700;color:var(--navy)}
+.score-pill{padding:0.25rem 0.75rem;border-radius:20px;font-size:0.8rem;font-weight:600;color:white;white-space:nowrap}
+.score-pill.s4{background:var(--success)}
+.score-pill.s3{background:var(--blue)}
+.score-pill.s2{background:var(--warning)}
+.score-pill.s1{background:var(--error)}
+.critere-desc{font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem}
+.critere-justif{font-size:0.85rem;color:var(--text);line-height:1.6;background:#f8fafc;border-radius:8px;padding:0.6rem 0.8rem}
+.bar-wrap{margin-top:0.75rem;background:#f1f5f9;border-radius:6px;height:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:6px;transition:width 0.6s ease}
+ 
+/* SECTIONS */
+.section-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--navy);margin:1.5rem 0 0.75rem;display:flex;align-items:center;gap:0.5rem}
+.objectifs-list{display:flex;flex-direction:column;gap:0.5rem}
+.obj-item{display:flex;align-items:flex-start;gap:0.6rem;font-size:0.88rem;color:var(--text);line-height:1.5}
+.obj-dot{width:6px;height:6px;background:var(--blue);border-radius:50%;margin-top:0.45rem;flex-shrink:0}
+.reco-list{display:flex;flex-direction:column;gap:0.5rem}
+.reco-item{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:0.6rem 0.9rem;font-size:0.85rem;color:#92400e;display:flex;gap:0.6rem;align-items:flex-start}
+ 
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:0.75rem;padding:1rem;background:#f8fafc;border-radius:10px;margin-top:1rem}
+.leg-item{display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:var(--muted)}
+.leg-dot{width:12px;height:12px;border-radius:3px}
+ 
+/* ACTION BTNS */
+.action-row{display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.25rem;flex-wrap:wrap}
+.btn-sm{padding:0.6rem 1.25rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;border:none}
+.btn-save{background:var(--success);color:white}
+.btn-save:hover{background:#047857}
+.btn-download{background:white;color:var(--navy);border:1.5px solid var(--border)}
+.btn-download:hover{border-color:var(--navy);background:#f8fafc}
+.btn-new{background:white;color:var(--blue);border:1.5px solid var(--blue)}
+.btn-new:hover{background:#eff6ff}
+ 
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--navy);color:white;border-radius:var(--radius);padding:1.5rem;text-align:center}
+.stat-n{font-family:'Syne',sans-serif;font-size:2rem;font-weight:800}
+.stat-l{font-size:0.78rem;opacity:0.7;margin-top:0.25rem;text-transform:uppercase;letter-spacing:1px}
+ 
+/* HISTORY */
+.hist-item{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:0.75rem;cursor:pointer;transition:all 0.2s;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.hist-item:hover{border-color:var(--blue);box-shadow:0 4px 12px rgba(37,99,235,0.1)}
+.hist-preview{font-size:0.8rem;color:var(--muted);margin-top:0.25rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:400px}
+.hist-score{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--navy);text-align:right;white-space:nowrap}
+.hist-qualif{font-size:0.7rem;color:var(--muted);text-align:right}
+ 
+/* NAV TABS */
+.tabs{display:flex;gap:0.5rem;margin-bottom:1.5rem}
+.tab{padding:0.5rem 1.25rem;border:1.5px solid var(--border);background:white;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:500;color:var(--muted);cursor:pointer;transition:all 0.2s}
+.tab.active{background:var(--navy);color:white;border-color:var(--navy)}
+ 
+/* ALERT */
+.alert{padding:0.85rem 1.1rem;border-radius:10px;font-size:0.85rem;margin-top:1rem;display:flex;align-items:flex-start;gap:0.6rem}
+.alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.alert.success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+.alert.warn{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+ 
+.hidden{display:none!important}
+ 
+/* FILE UPLOAD */
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:1.25rem;text-align:center;cursor:pointer;transition:all 0.25s;background:#f8fafc;margin-bottom:0.75rem;position:relative}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--blue);background:#eff6ff}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:1.8rem;margin-bottom:0.4rem}
+.upload-text{font-size:0.85rem;color:var(--muted);line-height:1.5}
+.upload-text strong{color:var(--blue)}
+.file-badge{display:inline-flex;align-items:center;gap:0.5rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:0.4rem 0.8rem;font-size:0.82rem;color:#1e40af;margin-top:0.5rem}
+.file-badge .rm{cursor:pointer;color:#6b7280;font-size:0.9rem;margin-left:0.25rem}
+.file-badge .rm:hover{color:var(--error)}
+.or-divider{display:flex;align-items:center;gap:0.75rem;margin:0.6rem 0;color:var(--muted);font-size:0.8rem}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+ 
+/* PROFILE CARD */
+.profile-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:1.75rem;margin-bottom:1.25rem}
+.profile-header{display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem}
+.profile-avatar-lg{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--gold));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;color:white;flex-shrink:0}
+.profile-name-block .name{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--navy)}
+.profile-name-block .email{font-size:0.82rem;color:var(--muted);margin-top:2px}
+.profile-name-block .since{font-size:0.75rem;color:var(--muted);margin-top:2px;opacity:0.7}
+ 
+.profile-field{margin-bottom:1rem}
+.profile-field label{display:block;font-size:0.8rem;font-weight:500;color:var(--muted);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.5px}
+.profile-field input{width:100%;padding:0.75rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;color:var(--text);background:var(--cream)}
+.profile-field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,0.1)}
+ 
+.btn-profile-save{padding:0.7rem 1.5rem;background:var(--navy);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;cursor:pointer;transition:all 0.2s}
+.btn-profile-save:hover{background:var(--navy2)}
+.btn-profile-danger{padding:0.7rem 1.5rem;background:#fef2f2;color:var(--error);border:1.5px solid #fecaca;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;cursor:pointer;transition:all 0.2s;margin-left:0.75rem}
+.btn-profile-danger:hover{background:#fee2e2}
+ 
+/* Spinner auth */
+.auth-spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.3);border-top:2px solid white;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:0.5rem;vertical-align:middle}
+ 
+@media(max-width:640px){
+  .grid-2,.grid-3,.stats-row{grid-template-columns:1fr}
+  .app{padding:1rem}
+  .hero{padding:1.5rem 1rem 2rem}
+  .logo-text{font-size:1.6rem}
+  .score-num{font-size:3rem}
+  .action-row{flex-direction:column}
+  .btn-sm{justify-content:center}
+  .auth-card{padding:1.75rem 1.25rem}
+}
+</style>
+</head>
+<body>
+ 
+<div id="authOverlay">
+  <div class="auth-bg"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark">🎯</div>
+      <div class="auth-logo-title">ProbIA <span>Informatique</span></div>
+      <div class="auth-logo-sub">Espace Enseignant · Maroc</div>
+    </div>
+ 
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">Connexion</button>
+      <button class="auth-tab" id="tabRegisterBtn" onclick="switchAuthTab('register')">Créer un compte</button>
+    </div>
+ 
+    <div id="loginForm">
+      <div class="auth-form-group">
+        <label class="auth-label">Identifiant (email)</label>
+        <div class="input-wrap"><span class="input-icon">✉️</span><input class="auth-input" type="email" id="loginEmail" placeholder="vous@exemple.com" autocomplete="email"></div>
+      </div>
+      <div class="auth-form-group">
+        <label class="auth-label">Mot de passe</label>
+        <div class="input-wrap"><span class="input-icon">🔒</span><input class="auth-input" type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"><button class="input-toggle" type="button" onclick="togglePwd('loginPassword',this)">👁</button></div>
+      </div>
+      <div id="loginAlert"></div>
+      <button class="auth-btn" id="loginBtn" onclick="doLogin()">Se connecter</button>
+      <div class="auth-footer">Mot de passe oublié ?</div>
+    </div>
+ 
+    <div id="registerForm" class="hidden">
+      <div class="auth-form-group"><label class="auth-label">Nom complet</label><div class="input-wrap"><span class="input-icon">👤</span><input class="auth-input" type="text" id="regName" placeholder="Prénom Nom"></div></div>
+      <div class="auth-form-group"><label class="auth-label">Email professionnel</label><div class="input-wrap"><span class="input-icon">✉️</span><input class="auth-input" type="email" id="regEmail" placeholder="vous@men.gov.ma"></div></div>
+      <div class="auth-form-group">
+        <label class="auth-label">Mot de passe</label>
+        <div class="input-wrap"><span class="input-icon">🔒</span><input class="auth-input" type="password" id="regPassword" placeholder="Min. 8 caractères" oninput="checkStrength(this.value)"><button class="input-toggle" type="button" onclick="togglePwd('regPassword',this)">👁</button></div>
+        <div class="strength-bar"><div class="strength-fill" id="strengthFill" style="width:0%"></div></div>
+        <div class="strength-label" id="strengthLabel" style="color:var(--muted);font-size:0.72rem;margin-top:0.3rem"></div>
+      </div>
+      <div class="auth-form-group"><label class="auth-label">Confirmer le mot de passe</label><div class="input-wrap"><span class="input-icon">🔒</span><input class="auth-input" type="password" id="regConfirm" placeholder="••••••••"><button class="input-toggle" type="button" onclick="togglePwd('regConfirm',this)">👁</button></div></div>
+      <div id="registerAlert"></div>
+      <button class="auth-btn" id="registerBtn" onclick="doRegister()">Créer mon espace</button>
+    </div>
+  </div>
+</div>
+ 
+<div id="appContainer" class="hidden">
+ 
+  <div class="hero" style="padding-bottom:0.75rem;padding-top:0.75rem">
+    <div class="hero-inner" style="display:flex;align-items:center;justify-content:flex-end;gap:1rem">
+      <div class="user-bar-info"><div class="user-avatar" id="topAvatar">?</div><div><div class="user-name" id="topName">—</div><div class="user-role">Enseignant · Maroc</div></div></div>
+      <button class="btn-logout" onclick="doLogout()">🚪 Déconnexion</button>
+    </div>
+  </div>
+ 
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="logo-row"><div class="logo-mark">🎯</div><div><div class="logo-text">ProbIA<span style="color:var(--gold)">Informatique</span></div><div class="logo-sub">Évaluateur Curriculaire IA · Maroc</div></div></div>
+      <p class="hero-desc">Analyse intelligente de situations-problèmes et d'évaluations pour les enseignants d'informatique — Tronc Commun Maroc</p>
+      <div class="badge-row"><span class="badge">📚 IO Maroc Septembre 2005</span><span class="badge gold">✨ IA Intégrée</span><span class="badge">Informatique</span></div>
+    </div>
+  </div>
+ 
+  <div class="app">
+    <div class="tabs"><button class="tab active" onclick="showTab('analyse')">📝 Analyse</button><button class="tab" onclick="showTab('historique')">📊 Historique</button><button class="tab" onclick="showTab('profil')">👤 Mon Profil</button></div>
+ 
+    <div id="tab-analyse">
+      <div class="mode-switcher"><button class="mode-btn active" id="btn-situation" onclick="setMode('situation')">📝 Situation-Problème</button><button class="mode-btn" id="btn-evaluation" onclick="setMode('evaluation')">📋 Évaluation</button></div>
+ 
+      <div id="area-situation">
+        <div class="card">
+          <div class="card-title">📄 Votre situation-problème</div>
+          <div class="form-group"><label class="form-label">Importer un fichier <span style="font-size:0.75rem;color:var(--muted);font-weight:400">(PDF, Word, TXT)</span></label><div class="upload-zone" id="uploadZoneSituation" ondragover="handleDrag(event)" ondragleave="handleDragLeave(event,'uploadZoneSituation')" ondrop="handleDrop(event,'situation')"><input type="file" id="fileSituation" accept=".pdf,.doc,.docx,.txt" onchange="handleFile(event,'situation')"><div class="upload-icon">📂</div><div class="upload-text"><strong>Cliquez</strong> ou glissez votre fichier ici<br>PDF · Word · TXT</div></div><div id="fileBadgeSituation" style="display:none"></div><div class="or-divider">ou saisissez le texte directement</div></div>
+          <div class="form-group"><label class="form-label">Texte complet <span class="required">*</span></label><textarea id="situationText" rows="7" placeholder="Collez ici le texte complet de la situation-problème..."></textarea></div>
+          <div class="grid-2"><div class="form-group"><label class="form-label">Module</label><select id="moduleSituation" onchange="updateLecons()"><option value="M1">Module 1 — Généralités sur les systèmes informatiques</option><option value="M2">Module 2 — Les logiciels</option><option value="M3">Module 3 — Algorithmique et Programmation</option><option value="M4">Module 4 — Réseaux et Internet</option></select></div><div class="form-group"><label class="form-label">Leçon ciblée</label><select id="leconSituation"></select></div></div>
+          <div class="hint">💡 La situation doit mobiliser les compétences du programme officiel marocain 2005 et proposer une tâche ouverte permettant plusieurs stratégies de résolution.</div>
+        </div>
+      </div>
+ 
+      <div id="area-evaluation" class="hidden">
+        <div class="card">
+          <div class="card-title">📋 Votre évaluation (fichier uniquement)</div>
+          <div class="form-group"><label class="form-label">Importer le fichier du contrôle <span style="font-size:0.75rem;color:var(--muted);font-weight:400">(PDF, Word, TXT)</span></label><div class="upload-zone" id="uploadZoneEval" ondragover="handleDrag(event)" ondragleave="handleDragLeave(event,'uploadZoneEval')" ondrop="handleDrop(event,'evaluation')"><input type="file" id="fileEvaluation" accept=".pdf,.doc,.docx,.txt" onchange="handleFileEval(event)"><div class="upload-icon">📂</div><div class="upload-text"><strong>Cliquez</strong> ou glissez le fichier du contrôle<br>PDF · Word · TXT</div></div><div id="fileBadgeEval" style="display:none"></div><div class="hint gold">📌 Pour analyser une évaluation, importez son fichier (PDF/Word/TXT). Le contenu sera extrait automatiquement.</div></div>
+          
+          <div class="grid-3"><div class="form-group"><label class="form-label">Niveau des élèves</label><select id="niveauEleves"><option value="faible">📉 Faible</option><option value="moyen" selected>📊 Moyen</option><option value="bon">📈 Bon</option><option value="excellent">⭐ Excellent</option></select></div><div class="form-group"><label class="form-label">Temps disponible</label><select id="tempsDisponible"><option value="45min">45 minutes</option><option value="1h" selected>1 heure</option><option value="1h30">1 heure 30</option><option value="2h">2 heures</option><option value="projet">Projet multi-séances</option></select></div><div class="form-group"><label class="form-label">Prérequis</label><select id="prerequis"><option value="aucun">❌ Aucun</option><option value="faible" selected>📖 Faibles</option><option value="moyen">📚 Moyens</option><option value="bon">🎓 Bons</option></select></div></div>
+ 
+          <div class="form-group"><label class="form-label">📚 Cours couverts par ce contrôle</label><div class="grid-2" style="margin-bottom:0.5rem"><div><select id="moduleEval" onchange="updateLeconsEval()"><option value="M1">Module 1 — Généralités sur les systèmes informatiques</option><option value="M2">Module 2 — Les logiciels</option><option value="M3">Module 3 — Algorithmique et Programmation</option><option value="M4">Module 4 — Réseaux et Internet</option></select></div><div><button type="button" onclick="addLeconEval()" style="width:100%;padding:0.85rem 1rem;background:var(--blue);color:white;border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:0.88rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem">➕ Ajouter un cours</button></div></div><div><select id="leconEvalSelect"></select></div><div id="leconsChoisies" style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.75rem;min-height:0"></div><div class="hint" style="margin-top:0.5rem">📖 Sélectionnez tous les cours qui sont évalués dans ce contrôle.</div></div>
+          <div class="hint gold">📌 Une bonne évaluation est juste, transparente, alignée avec les objectifs, et fournit un feedback utile à l'élève pour progresser.</div>
+        </div>
+      </div>
+ 
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyze()"><span class="sparkle">✦</span>Analyser avec l'IA</button>
+      <div id="alertBox" class="hidden"></div>
+      <div id="loadingContainer" class="hidden"><div class="loading"><div class="loading-ring"></div><div class="loading-msg">IA analyse votre document...</div><div class="loading-steps" id="loadingSteps"></div></div></div>
+      <div id="results" class="hidden"><div id="scoreHero"></div><div class="legend"><div class="leg-item"><div class="leg-dot" style="background:#059669"></div>24-28 · Excellent</div><div class="leg-item"><div class="leg-dot" style="background:#3b82f6"></div>20-23 · Très bien</div><div class="leg-item"><div class="leg-dot" style="background:#d97706"></div>16-19 · Bien</div><div class="leg-item"><div class="leg-dot" style="background:#f97316"></div>12-15 · À améliorer</div><div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>0-11 · Insuffisant</div></div><canvas id="radarChart" width="360" height="280" style="display:block;margin:1.5rem auto"></canvas><div class="section-title">📋 Détail des critères</div><div id="criteresContainer"></div><div class="section-title">🎯 Objectifs pédagogiques</div><div class="objectifs-list" id="objectifsContainer"></div><div class="section-title">💡 Recommandations IA</div><div class="reco-list" id="recommandationsContainer"></div><div class="action-row"><button class="btn-sm btn-new" onclick="resetForm()">🔄 Nouvelle analyse</button><button class="btn-sm btn-save" onclick="saveEval()">💾 Sauvegarder</button><button class="btn-sm btn-download" onclick="downloadReport()">📥 Télécharger rapport</button></div></div>
+    </div>
+ 
+    <div id="tab-historique" class="hidden"><div class="stats-row"><div class="stat-card"><div class="stat-n" id="st-total">0</div><div class="stat-l">Analyses</div></div><div class="stat-card"><div class="stat-n" id="st-avg">—</div><div class="stat-l">Score moyen</div></div><div class="stat-card"><div class="stat-n" id="st-best">—</div><div class="stat-l">Meilleur score</div></div><div class="stat-card"><div class="stat-n" id="st-revise">0</div><div class="stat-l">À retravailler</div></div></div><div id="histList"><p style="text-align:center;color:var(--muted);padding:2rem">Aucune analyse sauvegardée</p></div></div>
+    <div id="tab-profil" class="hidden"><div class="profile-card"><div class="profile-header"><div class="profile-avatar-lg" id="profileAvatarLg">?</div><div class="profile-name-block"><div class="name" id="profileNameDisplay">—</div><div class="email" id="profileEmailDisplay">—</div><div class="since" id="profileSinceDisplay">—</div></div></div><div class="card-title" style="margin-bottom:1rem">✏️ Modifier mes informations</div><div class="grid-2"><div class="profile-field"><label>Nom complet</label><input type="text" id="profileNameInput" placeholder="Votre nom complet"></div><div class="profile-field"><label>Email</label><input type="email" id="profileEmailInput" placeholder="votre@email.com"></div></div><div id="profileInfoAlert"></div><div style="margin-top:0.5rem"><button class="btn-profile-save" onclick="saveProfile()">💾 Enregistrer les modifications</button></div></div><div class="profile-card"><div class="card-title" style="margin-bottom:1rem">🔑 Changer le mot de passe</div><div class="grid-3"><div class="profile-field"><label>Mot de passe actuel</label><input type="password" id="pwdCurrent" placeholder="••••••••"></div><div class="profile-field"><label>Nouveau mot de passe</label><input type="password" id="pwdNew" placeholder="Min. 8 caractères"></div><div class="profile-field"><label>Confirmer le nouveau</label><input type="password" id="pwdConfirm" placeholder="••••••••"></div></div><div id="pwdChangeAlert"></div><div style="margin-top:0.5rem;display:flex;align-items:center;flex-wrap:wrap;gap:0.5rem"><button class="btn-profile-save" onclick="changePassword()">🔒 Changer le mot de passe</button><button class="btn-profile-danger" onclick="confirmDeleteAccount()">🗑️ Supprimer mon compte</button></div></div></div>
+  </div>
+</div>
+ 
+<script>
+const API = 'http://localhost:3000/api';
+let token = sessionStorage.getItem('probia_token');
+let currentMode = 'situation';
+let currentResult = null;
+let history = [];
+let evalFileContent = null; // stocke le texte extrait du fichier d'évaluation
+
+const LECONS = { M1: ["Définitions et vocabulaire de base","Définition du système informatique","Structure de base d'un ordinateur","Les périphériques","L'UCT / Processeur","Types de logiciels","Domaines d'application de l'informatique"], M2: ["Système d'exploitation","Environnement graphique (Bureau)","Gestion des fichiers et dossiers","Traitement de texte — Présentation","Élaboration d'un document","Insertion d'objets (images, tableaux)","Tableur — Présentation","Formules et fonctions","Graphiques dans un tableur"], M3: ["Notion d'algorithme","Variables, constantes et types","Instructions de base (lecture/écriture/affectation)","Structure séquentielle","Structure sélective — Si/Sinon","Structures sélectives imbriquées","Langages de programmation","Transcription d'algorithme en programme"], M4: ["Notion de réseau informatique","Topologie et types de réseaux (LAN, WAN)","Avantages et inconvénients des réseaux","Internet — Connexion et accès","Services Internet (Web, Email, FTP…)","Aspects éthiques et sécurité sur Internet"] };
+const CRITERES_SITUATION = [ { nom: "Obstacle Didactique", desc: "La situation crée-t-elle un vrai questionnement cognitif ?" }, { nom: "Tâche Finalisée", desc: "L'objectif final est-il clair et concret pour l'élève ?" }, { nom: "Ancrage Contextuel", desc: "La situation est-elle ancrée dans la réalité marocaine ?" }, { nom: "Alignement Curriculaire", desc: "Correspond-elle aux Instructions Officielles Maroc 2005 ?" }, { nom: "Stratégies Multiples", desc: "Permet-elle différentes approches de résolution ?" }, { nom: "Différenciation", desc: "S'adapte-t-elle aux différents niveaux d'élèves ?" }, { nom: "Pertinence Disciplinaire", desc: "Les concepts informatiques sont-ils au cœur de la situation ?" } ];
+const CRITERES_EVAL = [ { nom: "Clarté et Transparence", desc: "Les critères sont-ils compréhensibles par les élèves ?" }, { nom: "Alignement Objectifs", desc: "L'évaluation mesure-t-elle bien les objectifs visés ?" }, { nom: "Progressivité", desc: "Les questions sont-elles graduées en difficulté ?" }, { nom: "Justesse Scientifique", desc: "Les corrections/réponses sont-elles exactes et précises ?" }, { nom: "Équité", desc: "L'évaluation est-elle juste pour tous les élèves ?" }, { nom: "Différenciation", desc: "Permet-elle d'évaluer différents niveaux de maîtrise ?" }, { nom: "Feedback Utile", desc: "L'évaluation aide-t-elle l'élève à progresser ?" } ];
+
+function switchAuthTab(tab) { document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login'); document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register'); document.getElementById('tabLoginBtn').classList.toggle('active', tab === 'login'); document.getElementById('tabRegisterBtn').classList.toggle('active', tab === 'register'); }
+function togglePwd(id, btn) { const inp = document.getElementById(id); if (inp.type === 'password') { inp.type = 'text'; btn.textContent = '🙈'; } else { inp.type = 'password'; btn.textContent = '👁'; } }
+function showAuthAlert(containerId, msg, type = 'error') { const el = document.getElementById(containerId); el.innerHTML = `<div class="auth-alert ${type}">${msg}</div>`; setTimeout(() => { el.innerHTML = ''; }, 5000); }
+function checkStrength(pwd) { let score = 0; if (pwd.length >= 8) score++; if (pwd.length >= 12) score++; if (/[A-Z]/.test(pwd)) score++; if (/[0-9]/.test(pwd)) score++; if (/[^A-Za-z0-9]/.test(pwd)) score++; const fill = document.getElementById('strengthFill'); const label = document.getElementById('strengthLabel'); const pct = (score / 5) * 100; const levels = [{ color: '#dc2626', text: '❌ Très faible' },{ color: '#f97316', text: '⚠️ Faible' },{ color: '#d97706', text: '🟡 Moyen' },{ color: '#2563eb', text: '✅ Fort' },{ color: '#059669', text: '⭐ Très fort' }]; const lvl = levels[Math.min(score, 4)]; fill.style.width = pct + '%'; fill.style.background = lvl.color; label.textContent = pwd.length > 0 ? lvl.text : ''; label.style.color = lvl.color; }
+
+async function doRegister() { const nom = document.getElementById('regName').value.trim(); const email = document.getElementById('regEmail').value.trim().toLowerCase(); const password = document.getElementById('regPassword').value; const confirm = document.getElementById('regConfirm').value; if (!nom) { showAuthAlert('registerAlert','⚠️ Nom requis.','warn'); return; } if (password.length < 8) { showAuthAlert('registerAlert','⚠️ Min. 8 caractères.','warn'); return; } if (password !== confirm) { showAuthAlert('registerAlert','❌ Mots de passe différents.','error'); return; } const btn = document.getElementById('registerBtn'); btn.disabled = true; btn.innerHTML = '<span class="auth-spinner"></span>Création...'; try { const res = await fetch(`${API}/auth/register`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, nom }) }); const data = await res.json(); if (!res.ok) { showAuthAlert('registerAlert', data.error || '❌ Erreur serveur.', 'error'); btn.disabled = false; btn.textContent = 'Créer mon espace'; return; } showAuthAlert('registerAlert','✅ Compte créé ! Connexion...','success'); setTimeout(() => doLogin(), 1000); } catch (err) { showAuthAlert('registerAlert', `❌ Impossible de contacter le serveur : ${err.message}`, 'error'); btn.disabled = false; btn.textContent = 'Créer mon espace'; } }
+async function doLogin() { const email = document.getElementById('loginEmail').value.trim().toLowerCase(); const password = document.getElementById('loginPassword').value; if (!email || !password) { showAuthAlert('loginAlert','⚠️ Remplissez tous les champs.','warn'); return; } const btn = document.getElementById('loginBtn'); btn.disabled = true; btn.innerHTML = '<span class="auth-spinner"></span>Vérification...'; const res = await fetch(`${API}/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const data = await res.json(); if (!res.ok) { showAuthAlert('loginAlert', data.error || '❌ Identifiants incorrects.', 'error'); btn.disabled = false; btn.textContent = 'Se connecter'; return; } token = data.token; sessionStorage.setItem('probia_token', token); launchApp(data.user); }
+function launchApp(session) { const nom = session.nom || session.name || 'Utilisateur'; const initials = nom.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase(); document.getElementById('topAvatar').textContent = initials; document.getElementById('topName').textContent = nom; document.getElementById('profileAvatarLg').textContent = initials; document.getElementById('profileNameDisplay').textContent = nom; document.getElementById('profileEmailDisplay').textContent = session.email || ''; document.getElementById('profileSinceDisplay').textContent = 'Espace enseignant CRMEF'; document.getElementById('profileNameInput').value = nom; document.getElementById('profileEmailInput').value = session.email || ''; history = []; const overlay = document.getElementById('authOverlay'); overlay.classList.add('hiding'); setTimeout(() => { overlay.style.display = 'none'; document.getElementById('appContainer').classList.remove('hidden'); }, 400); updateLecons(); updateLeconsEval(); renderLeconsChoisies(); setMode('situation'); }
+function doLogout() { if (!confirm('Voulez-vous vous déconnecter ?')) return; sessionStorage.removeItem('probia_token'); location.reload(); }
+async function saveProfile() { const newName = document.getElementById('profileNameInput').value.trim(); if (!newName) { showProfileAlert('profileInfoAlert', '⚠️ Le nom ne peut pas être vide.', 'warn'); return; } const res = await fetch(`${API}/profil`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ nom: newName }) }); if (res.ok) { document.getElementById('topName').textContent = newName; document.getElementById('profileNameDisplay').textContent = newName; showProfileAlert('profileInfoAlert', '✅ Profil mis à jour !', 'success'); } else { showProfileAlert('profileInfoAlert', '❌ Erreur lors de la mise à jour.', 'error'); } }
+async function changePassword() { const newPwd = document.getElementById('pwdNew').value; const confirm = document.getElementById('pwdConfirm').value; if (!newPwd || newPwd.length < 8) { showProfileAlert('pwdChangeAlert', '⚠️ Min. 8 caractères.', 'warn'); return; } if (newPwd !== confirm) { showProfileAlert('pwdChangeAlert', '❌ Mots de passe différents.', 'error'); return; } const res = await fetch(`${API}/profil/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ newPassword: newPwd }) }); if (res.ok) { document.getElementById('pwdNew').value = ''; document.getElementById('pwdConfirm').value = ''; document.getElementById('pwdCurrent').value = ''; showProfileAlert('pwdChangeAlert', '✅ Mot de passe modifié !', 'success'); } else { showProfileAlert('pwdChangeAlert', '❌ Erreur lors du changement.', 'error'); } }
+async function confirmDeleteAccount() { if (!confirm('⚠️ Supprimer votre compte définitivement ?')) return; const res = await fetch(`${API}/profil`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } }); if (res.ok) { sessionStorage.removeItem('probia_token'); location.reload(); } }
+function showProfileAlert(containerId, msg, type = 'error') { const el = document.getElementById(containerId); el.innerHTML = `<div class="alert ${type}" style="margin-top:0.75rem">${msg}</div>`; setTimeout(() => { el.innerHTML = ''; }, 5000); }
+(function checkExistingSession() { if (token) { fetch(`${API}/profil`, { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.ok ? r.json() : null).then(user => { if (user) launchApp(user); }).catch(() => sessionStorage.removeItem('probia_token')); } })();
+
+function handleDrag(e) { e.preventDefault(); e.currentTarget.classList.add('drag'); }
+function handleDragLeave(e, zoneId) { document.getElementById(zoneId)?.classList.remove('drag'); }
+function handleDrop(e, mode) { e.preventDefault(); const zoneId = mode === 'situation' ? 'uploadZoneSituation' : 'uploadZoneEval'; document.getElementById(zoneId)?.classList.remove('drag'); const file = e.dataTransfer?.files?.[0]; if (file) processFile(file, mode); }
+function handleFile(e, mode) { const file = e.target.files?.[0]; if (file) processFile(file, mode); }
+function handleFileEval(e) { const file = e.target.files?.[0]; if (file) processFile(file, 'evaluation'); }
+
+function processFile(file, mode) {
+  const allowedTypes = ['text/plain','application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+  if (!allowedTypes.includes(file.type) && !file.name.match(/\.(txt|pdf|doc|docx)$/i)) { showAlert('⚠️ Format non supporté.', 'warn'); return; }
+  const badgeId = mode === 'situation' ? 'fileBadgeSituation' : 'fileBadgeEval';
+  const targetId = mode === 'situation' ? 'situationText' : null;
+  
+  if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      if (mode === 'situation') document.getElementById(targetId).value = e.target.result;
+      else evalFileContent = e.target.result;
+      showFileBadge(badgeId, file.name, mode);
+      showAlert('✅ Fichier importé avec succès !', 'success');
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    showFileBadge(badgeId, file.name, mode);
+    showAlert('📎 Fichier sélectionné. Pour les PDF/Word, copiez le contenu dans la zone texte.', 'warn');
+    if (mode === 'evaluation') evalFileContent = `[Fichier importé: ${file.name}] `;
+  }
+}
+function showFileBadge(badgeId, name, mode) { const el = document.getElementById(badgeId); el.style.display = 'block'; el.innerHTML = `<span class="file-badge">📄 ${name} <span class="rm" onclick="removeFile('${mode}')">✕</span></span>`; }
+function removeFile(mode) { const badgeId = mode === 'situation' ? 'fileBadgeSituation' : 'fileBadgeEval'; const inputId = mode === 'situation' ? 'fileSituation' : 'fileEvaluation'; if (mode === 'situation') document.getElementById('situationText').value = ''; else evalFileContent = null; document.getElementById(badgeId).style.display = 'none'; document.getElementById(inputId).value = ''; }
+
+let leconsEvalChoisies = [];
+function updateLeconsEval() { const mod = document.getElementById('moduleEval').value; const sel = document.getElementById('leconEvalSelect'); sel.innerHTML = LECONS[mod].map((l, i) => `<option value="${mod}-L${i+1}">${l}</option>`).join(''); }
+function addLeconEval() { const mod = document.getElementById('moduleEval').value; const sel = document.getElementById('leconEvalSelect'); const id = sel.value; const label = sel.options[sel.selectedIndex].text; const modLabel = document.getElementById('moduleEval').options[document.getElementById('moduleEval').selectedIndex].text.split('—')[0].trim(); if (leconsEvalChoisies.find(l => l.id === id)) { showAlert('⚠️ Ce cours est déjà ajouté.', 'warn'); return; } leconsEvalChoisies.push({ id, label, mod: modLabel }); renderLeconsChoisies(); }
+function removeLeconEval(id) { leconsEvalChoisies = leconsEvalChoisies.filter(l => l.id !== id); renderLeconsChoisies(); }
+function renderLeconsChoisies() { const el = document.getElementById('leconsChoisies'); if (!el) return; if (!leconsEvalChoisies.length) { el.innerHTML = '<span style="font-size:0.78rem;color:var(--muted);font-style:italic">Aucun cours sélectionné</span>'; return; } el.innerHTML = leconsEvalChoisies.map(l => `<span style="display:inline-flex;align-items:center;gap:0.4rem;background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:0.3rem 0.7rem;font-size:0.78rem;color:#1e40af">📖 ${l.label}<span onclick="removeLeconEval('${l.id}')" style="cursor:pointer;color:#6b7280;font-size:0.85rem" title="Retirer">✕</span></span>`).join(''); }
+
+function setMode(m) { currentMode = m; document.getElementById('btn-situation').classList.toggle('active', m === 'situation'); document.getElementById('btn-evaluation').classList.toggle('active', m === 'evaluation'); document.getElementById('area-situation').classList.toggle('hidden', m !== 'situation'); document.getElementById('area-evaluation').classList.toggle('hidden', m !== 'evaluation'); document.getElementById('results').classList.add('hidden'); }
+function showTab(t) { ['analyse','historique','profil'].forEach(name => { document.getElementById(`tab-${name}`).classList.toggle('hidden', t !== name); }); document.querySelectorAll('.tab').forEach((btn, i) => { btn.classList.toggle('active', ['analyse','historique','profil'][i] === t); }); if (t === 'historique') loadHistory(); }
+function updateLecons() { const mod = document.getElementById('moduleSituation')?.value; if (!mod) return; const sel = document.getElementById('leconSituation'); sel.innerHTML = LECONS[mod].map((l, i) => `<option value="${mod}-L${i+1}">${l}</option>`).join(''); }
+function resetForm() { document.getElementById('situationText').value = ''; evalFileContent = null; document.getElementById('results').classList.add('hidden'); document.getElementById('alertBox').classList.add('hidden'); removeFile('situation'); removeFile('evaluation'); leconsEvalChoisies = []; renderLeconsChoisies(); currentResult = null; }
+function showAlert(msg, type = 'error') { const el = document.getElementById('alertBox'); el.className = `alert ${type}`; el.innerHTML = msg; el.classList.remove('hidden'); setTimeout(() => el.classList.add('hidden'), 6000); }
+function scoreQualif(s) { if (s >= 24) return '⭐ Excellent'; if (s >= 20) return '✅ Très bien'; if (s >= 16) return '👍 Bien'; if (s >= 12) return '⚠️ À améliorer'; return '❌ Insuffisant'; }
+function pillClass(v) { return `s${Math.max(1, Math.min(4, v))}`; }
+function barColor(v) { return ['#dc2626','#f97316','#2563eb','#059669'][Math.max(0, Math.min(3, v - 1))]; }
+function drawRadar(scores, labels) { const canvas = document.getElementById('radarChart'); const ctx = canvas.getContext('2d'); const W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H); const cx = W/2, cy = H/2+10, r = Math.min(W,H)/2-55, n = scores.length; const angle = i => (Math.PI*2*i/n) - Math.PI/2; for (let lvl = 1; lvl <= 4; lvl++) { const rr = r*(lvl/4); ctx.beginPath(); for (let i = 0; i < n; i++) { const a = angle(i); i===0 ? ctx.moveTo(cx+rr*Math.cos(a), cy+rr*Math.sin(a)) : ctx.lineTo(cx+rr*Math.cos(a), cy+rr*Math.sin(a)); } ctx.closePath(); ctx.strokeStyle = lvl===4?'#cbd5e1':'#e2e8f0'; ctx.lineWidth = lvl===4?1.5:1; ctx.stroke(); ctx.fillStyle='#94a3b8'; ctx.font='9px DM Sans, sans-serif'; ctx.textAlign='center'; ctx.fillText(lvl, cx+4, cy-rr+3); } for (let i=0;i<n;i++) { const a=angle(i); ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+r*Math.cos(a),cy+r*Math.sin(a)); ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1; ctx.stroke(); } ctx.beginPath(); for (let i=0;i<n;i++) { const a=angle(i), rr=r*(scores[i]/4); i===0?ctx.moveTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a)):ctx.lineTo(cx+rr*Math.cos(a),cy+rr*Math.sin(a)); } ctx.closePath(); ctx.fillStyle='rgba(37,99,235,0.12)'; ctx.fill(); ctx.strokeStyle='#2563eb'; ctx.lineWidth=2; ctx.stroke(); for (let i=0;i<n;i++) { const a=angle(i), rr=r*(scores[i]/4); ctx.beginPath(); ctx.arc(cx+rr*Math.cos(a),cy+rr*Math.sin(a),4,0,Math.PI*2); ctx.fillStyle='#2563eb'; ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke(); } ctx.fillStyle='#475569'; ctx.textAlign='center'; ctx.textBaseline='middle'; for (let i=0;i<n;i++) { const a=angle(i), lx=cx+(r+30)*Math.cos(a), ly=cy+(r+30)*Math.sin(a); const words=labels[i].split(' '); ctx.font='600 9px DM Sans, sans-serif'; words.forEach((w,wi)=>ctx.fillText(w,lx,ly+(wi-(words.length-1)/2)*11)); } }
+
+function analyseIA(text, mode, context) { return new Promise((resolve) => { setTimeout(() => { const scores = [], justifications = []; const length = text.length; const hasKeywords = { marocain: /maroc|marocaine|casablanca|rabat|tanger|marrakech/i.test(text), objectif: /objectif|but|finalité|compétence/i.test(text), eleve: /élève|apprenant|étudiant/i.test(text), concret: /concret|réel|pratique|application/i.test(text), question: /\?/g.test(text), reflexion: /pourquoi|comment|analyse|réfléchir|raisonner/i.test(text), progression: /d'abord|ensuite|enfin|étape|phases?/i.test(text), evaluation: /barème|notation|point|critère|grille/i.test(text) }; const quality = Math.min(4, Math.max(1, Math.floor(length/300) + (hasKeywords.objectif?0.5:0) + (hasKeywords.eleve?0.5:0) + (hasKeywords.concret?0.5:0) + (hasKeywords.question?0.3:0))); if (mode === 'situation') { const defs = [[hasKeywords.question?Math.min(4,quality+1):Math.max(1,quality-1), hasKeywords.question?"La situation pose des questions qui stimulent la réflexion.":"La situation manque de questionnements explicites."],[hasKeywords.objectif?Math.min(4,quality+1):Math.max(1,quality-0.5), hasKeywords.objectif?"L'objectif final est clairement défini.":"La tâche finale pourrait être mieux définie."],[hasKeywords.marocain?Math.min(4,quality+1.5):Math.max(1,quality-1), hasKeywords.marocain?"Excellent ancrage dans la réalité marocaine.":"Un ancrage marocain renforcerait l'engagement."],[quality, "Alignée avec le programme officiel marocain 2005."],[quality, hasKeywords.reflexion?"Ouvre à plusieurs stratégies.":"Envisagez des approches multiples."],[quality, "Peut être adaptée selon les niveaux."],[quality, "Les concepts informatiques sont bien intégrés."]]; defs.forEach(([s, j]) => { scores.push(Math.min(4,Math.max(1,Math.round(s)))); justifications.push(j); }); } else { const evalQ = Math.min(4,Math.max(1,quality+(hasKeywords.evaluation?1:0)+(hasKeywords.progression?0.5:0))); const defs = [[hasKeywords.evaluation?Math.min(4,evalQ+1):Math.max(1,evalQ-0.5), hasKeywords.evaluation?"Critères clairs et transparents.":"Ajoutez une grille d'évaluation."],[evalQ, "Mesure bien les objectifs visés."],[hasKeywords.progression?Math.min(4,evalQ+1):Math.max(1,evalQ-0.5), hasKeywords.progression?"Questions bien progressives.":"Structurez par ordre de difficulté."],[evalQ, "Contenu scientifiquement exact."],[evalQ, "Évaluation équitable."],[evalQ, "Prévoir des options différenciées."],[evalQ, "Fournit un feedback utile."]]; defs.forEach(([s, j]) => { scores.push(Math.min(4,Math.max(1,Math.round(s)))); justifications.push(j); }); } const objectifs = mode === 'situation' ? [`Développer l'analyse d'une situation concrète (${context.leconNom||'leçon ciblée'}).`,`Favoriser l'autonomie et la résolution de problèmes.`,`Renforcer la pensée algorithmique.`] : [`Évaluer la maîtrise des compétences en informatique (${context.niveauEleves||'moyen'} niveau).`,`Mesurer l'application des concepts.`,`Identifier les axes de progression.`]; const recommandations = mode === 'situation' ? [hasKeywords.question?"✓ Stimule bien la réflexion.":"➕ Ajoutez des questionnements ouverts.",hasKeywords.marocain?"🌍 Bonne contextualisation.":"🏘️ Intégrez des références marocaines.",hasKeywords.objectif?"📌 Objectif clair.":"🎯 Formulez explicitement la tâche finale.","💡 Proposez des aides différenciées."] : [`${context.niveauEleves==='faible'?"📚 Ajoutez des questions guidées.":"🎯 Proposez des bonus pour les meilleurs."}`,`📋 Fournissez une grille d'évaluation détaillée.`,`⏱️ Vérifiez le temps imparti.`,`🔄 Intégrez de l'auto-évaluation.`]; resolve({ scores, justifications, objectifs, recommandations }); }, 1500); }); }
+
+async function analyze() {
+  let doc = '', context = {};
+  if (currentMode === 'situation') {
+    doc = document.getElementById('situationText').value.trim();
+    if (!doc || doc.length < 50) { showAlert('⚠️ Veuillez entrer une situation-problème détaillée.', 'warn'); return; }
+    const leconSel = document.getElementById('leconSituation'); context.leconNom = leconSel.options[leconSel.selectedIndex]?.text || ''; context.module = document.getElementById('moduleSituation').value;
+  } else {
+    if (!evalFileContent && !document.getElementById('fileEvaluation').files.length) { showAlert('⚠️ Veuillez importer un fichier d\'évaluation.', 'warn'); return; }
+    doc = evalFileContent || "[Contenu de l'évaluation importée]";
+    if (doc.length < 30) { showAlert('⚠️ Le contenu de l\'évaluation est insuffisant.', 'warn'); return; }
+    context.niveauEleves = document.getElementById('niveauEleves').value; context.tempsDisponible = document.getElementById('tempsDisponible').value; context.prerequis = document.getElementById('prerequis').value; context.leconsEval = leconsEvalChoisies.map(l => l.label);
+  }
+  const btn = document.getElementById('analyzeBtn'); btn.disabled = true; document.getElementById('loadingContainer').classList.remove('hidden'); document.getElementById('results').classList.add('hidden'); document.getElementById('alertBox').classList.add('hidden');
+  const steps = currentMode === 'situation' ? ['📖 Lecture...','🧠 Obstacle didactique...','📐 Alignement curriculaire...','✍️ Recommandations...'] : ['📖 Lecture...','🎯 Alignement objectifs...','⚖️ Équité et progressivité...','✍️ Recommandations...'];
+  const stepsEl = document.getElementById('loadingSteps'); stepsEl.innerHTML = steps.map((s,i) => `<div class="step" id="step${i}" style="animation-delay:${i*0.15}s">${s}</div>`).join(''); let si = 0; const stepInterval = setInterval(() => { if (si < steps.length) { document.getElementById(`step${si}`)?.classList.add('active'); si++; } else clearInterval(stepInterval); }, 900);
+  try { const analysis = await analyseIA(doc, currentMode, context); clearInterval(stepInterval); steps.forEach((_,i) => { const el = document.getElementById(`step${i}`); if (el) { el.classList.remove('active'); el.classList.add('done'); } }); const leconSel = document.getElementById('leconSituation'); currentResult = { mode: currentMode, documentTexte: doc, scores: analysis.scores, justifications: analysis.justifications, objectifs: analysis.objectifs, recommandations: analysis.recommandations, date: new Date().toISOString(), ...(currentMode === 'situation' ? { module: document.getElementById('moduleSituation').value, lecon: leconSel.value, leconNom: leconSel.options[leconSel.selectedIndex]?.text||'' } : { niveauEleves: document.getElementById('niveauEleves').value, tempsDisponible: document.getElementById('tempsDisponible').value, prerequis: document.getElementById('prerequis').value }) }; currentResult.scoreTotal = currentResult.scores.reduce((a,b)=>a+b,0); currentResult.qualificatif = scoreQualif(currentResult.scoreTotal); displayResults(currentResult); showAlert('✅ Analyse terminée !', 'success'); } catch(err) { clearInterval(stepInterval); showAlert(`❌ Erreur : ${err.message}`, 'error'); } finally { btn.disabled = false; document.getElementById('loadingContainer').classList.add('hidden'); } }
+
+function displayResults(res) { const total = res.scoreTotal; const col = ['#059669','#2563eb','#d97706','#f97316','#dc2626'][Math.min(4,Math.floor((28-total)/7))]; const qual = res.qualificatif; const criteres = res.mode === 'situation' ? CRITERES_SITUATION : CRITERES_EVAL; document.getElementById('scoreHero').innerHTML = `<div class="score-hero" style="background:linear-gradient(135deg,${col},${col}cc)"><div class="score-num">${total}<span class="score-denom">/28</span></div><div class="score-label">Score global · ${res.mode==='situation'?'Situation-Problème':'Évaluation'}</div><div class="score-badge">${qual}</div></div>`; drawRadar(res.scores, criteres.map(c=>c.nom)); const qMap = ['','Insuffisant','En progrès','Satisfaisant','Excellent']; document.getElementById('criteresContainer').innerHTML = criteres.map((c,i) => `<div class="critere-item"><div class="critere-header"><div><div class="critere-name">${i+1}. ${c.nom}</div><div class="critere-desc">${c.desc}</div></div><span class="score-pill ${pillClass(res.scores[i])}">${res.scores[i]}/4 · ${qMap[res.scores[i]]||'—'}</span></div><div class="critere-justif">${res.justifications[i]||'—'}</div><div class="bar-wrap"><div class="bar-fill" style="width:${res.scores[i]*25}%;background:${barColor(res.scores[i])}"></div></div></div>`).join(''); document.getElementById('objectifsContainer').innerHTML = res.objectifs.map(o=>`<div class="obj-item"><div class="obj-dot"></div><span>${o}</span></div>`).join(''); document.getElementById('recommandationsContainer').innerHTML = res.recommandations.map(r=>`<div class="reco-item">💡 <span>${r}</span></div>`).join(''); document.getElementById('results').classList.remove('hidden'); document.getElementById('results').scrollIntoView({ behavior:'smooth', block:'start' }); }
+async function saveEval() { if (!currentResult) { showAlert('Rien à sauvegarder.', 'warn'); return; } const res = await fetch(`${API}/analyses`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(currentResult) }); if (res.ok) showAlert('✅ Analyse sauvegardée !', 'success'); else showAlert('❌ Erreur de sauvegarde.', 'error'); }
+async function loadHistory() { const res = await fetch(`${API}/analyses`, { headers: { 'Authorization': `Bearer ${token}` } }); const data = await res.json(); history = data; renderHistory(); }
+function renderHistory() { const container = document.getElementById('histList'); if (!history.length) { container.innerHTML = '<p style="text-align:center;color:var(--muted);padding:2rem">Aucune analyse sauvegardée</p>'; document.getElementById('st-total').innerText = '0'; document.getElementById('st-avg').innerText = '—'; document.getElementById('st-best').innerText = '—'; document.getElementById('st-revise').innerText = '0'; return; } let totalScore = 0, bestScore = 0, reviseCount = 0; history.forEach(h => { totalScore += h.scoreTotal; if (h.scoreTotal > bestScore) bestScore = h.scoreTotal; if (h.scoreTotal < 12) reviseCount++; }); document.getElementById('st-total').innerText = history.length; document.getElementById('st-avg').innerText = (totalScore/history.length).toFixed(1); document.getElementById('st-best').innerText = bestScore; document.getElementById('st-revise').innerText = reviseCount; container.innerHTML = history.map((h, idx) => `<div class="hist-item" onclick="loadFromHistory(${idx})"><div><strong>${new Date(h.date).toLocaleDateString('fr-FR')}</strong><div class="hist-preview">${h.mode === 'situation' ? '📝 Situation' : '📋 Évaluation'} · ${h.documentTexte.substring(0,80)}...</div></div><div><div class="hist-score">${h.scoreTotal}/28</div><div class="hist-qualif">${scoreQualif(h.scoreTotal)}</div></div></div>`).join(''); }
+function loadFromHistory(idx) { currentResult = history[idx]; currentMode = currentResult.mode; setMode(currentMode); if (currentMode === 'situation') { document.getElementById('situationText').value = currentResult.documentTexte; if (currentResult.module) { document.getElementById('moduleSituation').value = currentResult.module; updateLecons(); setTimeout(() => { if (currentResult.lecon) document.getElementById('leconSituation').value = currentResult.lecon; }, 50); } } else { evalFileContent = currentResult.documentTexte; if (currentResult.niveauEleves) document.getElementById('niveauEleves').value = currentResult.niveauEleves; if (currentResult.tempsDisponible) document.getElementById('tempsDisponible').value = currentResult.tempsDisponible; if (currentResult.prerequis) document.getElementById('prerequis').value = currentResult.prerequis; } displayResults(currentResult); showTab('analyse'); }
+function downloadReport() { if (!currentResult) return; const criteres = currentResult.mode==='situation'?CRITERES_SITUATION:CRITERES_EVAL; const date = new Date(currentResult.date).toLocaleString('fr-FR'); let header = ''; if (currentResult.mode==='situation') header=`Module    : ${currentResult.module}\nLeçon     : ${currentResult.leconNom}`; else header=`Niveau élèves : ${currentResult.niveauEleves}\nTemps dispo   : ${currentResult.tempsDisponible}\nPrérequis     : ${currentResult.prerequis}`; const lines = ['PROBIA v2 — RAPPORT D\'ANALYSE','='.repeat(50),'',`DATE    : ${date}`,header,'','DOCUMENT ANALYSÉ :','-'.repeat(50), currentResult.documentTexte,'','='.repeat(50),`SCORE GLOBAL  : ${currentResult.scoreTotal} / 28`,`QUALIFICATIF  : ${currentResult.qualificatif}`,'='.repeat(50),'','CRITÈRES DÉTAILLÉS :','-'.repeat(50), ...criteres.map((c,i)=>`${i+1}. ${c.nom} : ${currentResult.scores[i]}/4\n   → ${currentResult.justifications[i]||'—'}`),'','OBJECTIFS PÉDAGOGIQUES :','-'.repeat(50), ...currentResult.objectifs.map(o=>`• ${o}`),'','RECOMMANDATIONS IA :','-'.repeat(50), ...currentResult.recommandations.map((r,i)=>`${i+1}. ${r}`),'','='.repeat(50), 'Rapport généré par ProbIA v2 - CRMEF · Informatique']; const blob = new Blob([lines.join('\n')],{type:'text/plain;charset=utf-8'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `probia_${currentResult.mode}_${new Date().toISOString().slice(0,10)}.txt`; a.click(); URL.revokeObjectURL(a.href); showAlert('📄 Rapport téléchargé !', 'success'); }
+</script>
+</body>
+</html>
