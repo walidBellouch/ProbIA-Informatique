@@ -18,3 +18,10 @@ app.use('/api/profil',   require('./routes/profil'));
 app.listen(process.env.PORT || 3000, () =>
   console.log(`ProbIA backend : http://localhost:${process.env.PORT || 3000}`)
 );
+app.use(cors({
+  origin: [
+    "https://walidbellouch.github.io/ProbIA-Informatique/",   // GitHub Pages
+    "http://localhost:5500",
+    "http://127.0.0.1:5500"
+  ]
+}));
